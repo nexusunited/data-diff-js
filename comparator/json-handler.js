@@ -1,6 +1,5 @@
 const hasher = require('../hasher');
 
-const HEADER = 'HEADER'
 const HEADERHASH = 'HEADERHASH'
 
 function JsonHandler(identifier) {
@@ -25,7 +24,25 @@ function JsonHandler(identifier) {
 
     this.compare = async function (fileHandler) {
         await parseNewFile(fileHandler);
-        return this.newValue;
+    };
+
+    this.getOutput = function (outputForFile = false) {
+        if (outputForFile) {
+            // format delta for fileOutput
+        } else if (this.newValue.headerNew) {
+            const {preHeaderUpdate} = this.newValue;
+            return {
+                header: preHeaderUpdate.header,
+                insert: preHeaderUpdate.insert,
+                update: preHeaderUpdate.update
+            }
+        } else {
+            return {
+                header: this.newValue.header,
+                insert: this.newValue.insert,
+                update: this.newValue.update
+            };
+        }
     };
 
     const parseOldFile = (fileHandle) => {
@@ -98,13 +115,15 @@ function JsonHandler(identifier) {
                         if (index === 0) {
                             if (hashedObj === oldValues[HEADERHASH]) {
                                 newValue.header = headerNew;
-                            } else {
-                                newHeaderFields = headerNew.filter(e => !oldValues[HEADER].includes(e));
+                            } else if (typeof oldValues[HEADERHASH] === 'string') {
+                                newHeaderFields = headerNew.filter(e => !this.headerOld.includes(e));
                                 newHeaderFields.unshift(this.identifier);
 
                                 newValue.header = newHeaderFields;
                                 newValue.headerNew = true;
                                 newValue.preHeaderUpdate.header = this.headerOld;
+                            } else {
+                                newValue.header = headerNew;
                             }
                         }
                         let sku = entry[this.identifier];
@@ -125,7 +144,7 @@ function JsonHandler(identifier) {
                                     const isIdentifier = field === this.identifier;
                                     const isNewHeaderField = newHeaderFields.includes(field);
 
-                                    if(isIdentifier || !isNewHeaderField){
+                                    if (isIdentifier || !isNewHeaderField) {
                                         cleanedEntry[field] = entry[index];
                                     }
                                 });
@@ -135,7 +154,7 @@ function JsonHandler(identifier) {
                             } else if (oldValues[sku] !== hashObject(Object.getOwnPropertyNames(cleanedEntry), cleanedEntry)) {
                                 newValue.preHeaderUpdate.update.push(cleanedEntry);
                             }
-                            newValue.update.push(deltaLine);
+                            newValue.update.push(deltaEntry);
                         }
                     });
 
@@ -150,10 +169,7 @@ function JsonHandler(identifier) {
     };
 
     const parseJsonArray = (arrayString) => {
-        return arrayString
-            .substr(2, arrayString.length - 4)
-            .split('},{')
-            .map(jsonString => JSON.parse(`{${jsonString}}`));
+        return (JSON.parse(`{"data":${arrayString}}`)).data;
     };
 
     const hashObject = function (properties, entry) {

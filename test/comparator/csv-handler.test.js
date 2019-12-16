@@ -9,8 +9,14 @@ const fileA = fileHandler.createFileHandler(testConstants.dataPath('a.csv'));
 testHandlerObj.consume(fileA)
     .then(() => {
             const fileB = fileHandler.createFileHandler(testConstants.dataPath('b.csv'));
-            return testHandlerObj.compare(fileB).then((diff) => {
-                console.log(diff);
+            return testHandlerObj.compare(fileB).then(() => {
+                const diff = testHandlerObj.getOutput();
+
+                console.log(
+                    `Inserts: ${diff.insert.length}`,
+                    `Update: ${diff.update.length}`,
+                    `Header new: ${diff.headerNew ? 'yes' : 'no'}`
+                );
             })
         }
     );

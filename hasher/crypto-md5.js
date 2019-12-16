@@ -18,4 +18,4 @@ const getHash = function (input) {
 module.exports = {
     hashObject,
     getHash
-}
+};

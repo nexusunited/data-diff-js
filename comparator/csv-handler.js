@@ -28,7 +28,25 @@ function CsvHandler(separator, identifier) {
 
     this.compare = async function (fileHandler) {
         await parseNewFile(fileHandler);
-        return this.newValue;
+    };
+
+    this.getOutput = function (outputForFile = false) {
+        if (outputForFile) {
+            // format delta for fileOutput
+        } else if (this.newValue.headerNew) {
+            const {preHeaderUpdate} = this.newValue;
+            return {
+                header: preHeaderUpdate.header,
+                insert: preHeaderUpdate.insert,
+                update: preHeaderUpdate.update
+            }
+        } else {
+            return {
+                header: this.newValue.header,
+                insert: this.newValue.insert,
+                update: this.newValue.update
+            };
+        }
     };
 
     const parseOldFile = (fileHandle) => {
@@ -123,13 +141,15 @@ function CsvHandler(separator, identifier) {
 
                     if (hashedLine === oldValues[HEADERHASH]) {
                         newValue.header = line;
-                    } else {
+                    } else if (typeof oldValues[HEADERHASH] === 'string') {
                         newHeaderFields = headerNew.filter(e => !this.headerOld.includes(e));
                         newHeaderFields.unshift(this.identifier);
 
                         newValue.header = newHeaderFields.join(this.separator);
                         newValue.headerNew = true;
                         newValue.preHeaderUpdate.header = this.headerOld;
+                    } else {
+                        newValue.header = line;
                     }
                 }
 

@@ -9,7 +9,9 @@ const fileA = fileHandler.createFileHandler(testConstants.dataPath('time_registr
 testHandlerObj.consume(fileA)
     .then(() => {
             const fileB = fileHandler.createFileHandler(testConstants.dataPath('time_registrations-2.json'));
-            return testHandlerObj.compare(fileB).then((diff) => {
+            return testHandlerObj.compare(fileB).then(() => {
+                const diff = testHandlerObj.getOutput();
+
                 console.log(
                     `Inserts: ${diff.insert.length}`,
                     `Update: ${diff.update.length}`,

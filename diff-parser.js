@@ -6,12 +6,12 @@ function DiffParser(type, identifier, separator = null) {
 
     this.createDiffFile = async function (inputOld, inputNew, output = null) {
         (inputOld !== '' || typeof inputOld !== 'string') && await this.comparator.consume(getHandle(inputOld));
-        const newValues = await this.comparator.compare(getHandle(inputNew));
+        await this.comparator.compare(getHandle(inputNew));
 
         if (output !== null) {
-            return writeFile(output, newValues);
+            return writeFile(output, this.comparator.getOutput(true));
         } else {
-            return newValues;
+            return this.comparator.getOutput();
         }
     };
 
@@ -19,8 +19,11 @@ function DiffParser(type, identifier, separator = null) {
         return ('string' === typeof fileHandleOrPath) ? fileHandler.createFileHandler(fileHandleOrPath) : fileHandleOrPath;
     };
 
-    const writeFile = function (path, inputArray) {
-        fileHandler.writeFile(inputArray.join('\n'), path);
+    const writeFile = function (pathObj, deltaObj) {
+        fileHandler.writeFile(deltaObj.insert.join('\n'), pathObj.insert);
+        fileHandler.writeFile(deltaObj.update.join('\n'), pathObj.update);
+
+        return pathObj;
     };
 }
 
