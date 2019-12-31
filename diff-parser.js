@@ -4,14 +4,14 @@ const {getComparator} = require('./comparator');
 function DiffParser(type, identifier, separator = null) {
     this.comparator = getComparator(type, {identifier, separator});
 
-    this.createDiffFile = async function (inputOld, inputNew, output = null) {
+    this.createDiffFile = async function (inputOld, inputNew, {full, path}) {
         (inputOld !== '' || typeof inputOld !== 'string') && await this.comparator.consume(getHandle(inputOld));
         await this.comparator.compare(getHandle(inputNew));
 
-        if (output !== null) {
-            return writeFile(output, this.comparator.getOutput(true));
+        if (path !== null) {
+            return writeFile(path, this.comparator.getOutput(full, true));
         } else {
-            return this.comparator.getOutput();
+            return this.comparator.getOutput(full);
         }
     };
 

@@ -26,22 +26,24 @@ function JsonHandler(identifier) {
         await parseNewFile(fileHandler);
     };
 
-    this.getOutput = function (outputForFile = false) {
+    this.getOutput = function (full = false, outputForFile = false) {
         if (outputForFile) {
             // format delta for fileOutput
-        } else if (this.newValue.headerNew) {
+        } else if (!full && this.newValue.headerNew) {
             const {preHeaderUpdate} = this.newValue;
             return {
                 header: preHeaderUpdate.header,
                 insert: preHeaderUpdate.insert,
                 update: preHeaderUpdate.update
             }
-        } else {
+        } else if (!full) {
             return {
                 header: this.newValue.header,
                 insert: this.newValue.insert,
                 update: this.newValue.update
             };
+        } else {
+            return this.newValue;
         }
     };
 
