@@ -1,8 +1,8 @@
 const fileHandler = require('./file-handler');
 const {getComparator} = require('./comparator');
 
-function DiffParser(type, identifier, separator = null) {
-    this.comparator = getComparator(type, {identifier, separator});
+function DiffParser(type, identifier, separator = null, debugging = false) {
+    this.comparator = getComparator(type, {identifier, separator, debugging});
 
     this.createDiffFile = async function (inputOld, inputNew, {full, path}) {
         (inputOld !== '' || typeof inputOld !== 'string') && await this.comparator.consume(getHandle(inputOld));

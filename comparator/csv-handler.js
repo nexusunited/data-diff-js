@@ -3,9 +3,12 @@ const hasher = require('../hasher');
 const HEADER = 'HEADER';
 const HEADERHASH = 'HEADERHASH';
 
-function CsvHandler(separator, identifier) {
+function CsvHandler(separator, identifier, debug = false) {
     this.separator = separator;
     this.identifier = identifier;
+
+    this.debug = debug;
+    this.fullOldValues = {};
 
     this.headerOld = [];
     this.oldValues = {};
@@ -55,7 +58,9 @@ function CsvHandler(separator, identifier) {
         const oldFileParserPromise = new Promise((resolve) => {
             let count = 0,
                 skuIndex = 0,
-                oldVal = {};
+                oldValueObj = {
+                    hashedOldValues: {}, oldVal: {}
+                };
 
             fileHandle.on('line', (line) => {
                 let lineSplit = line.split(this.separator);
@@ -63,29 +68,32 @@ function CsvHandler(separator, identifier) {
 
                 if (count === 0) {
                     this.headerOld = lineSplit;
-                    oldVal[HEADER] = lineSplit;
+                    oldValueObj.hashedOldValues[HEADER] = lineSplit;
                     field = HEADERHASH;
                 } else {
                     skuIndex = this.headerOld.indexOf(this.identifier);
                     field = lineSplit[skuIndex];
                 }
 
-                oldVal[field] = getHash(line);
+                oldValueObj.hashedOldValues[field] = getHash(line);
+                oldValueObj.oldVal[field] = this.debug && lineSplit;
 
                 count++
             });
 
-            fileHandle.on('close', () => resolve(oldVal))
+            fileHandle.on('close', () => resolve(oldValueObj))
         });
 
         return oldFileParserPromise.then(values => {
-            this.oldValues = values;
+            this.oldValues = values.hashedOldValues;
+            this.fullOldValues = values.oldVal;
+
             fileHandle.close();
         });
     };
 
     const parseNewFile = (newFileHandle) => {
-        const {oldValues} = this;
+        const {oldValues, fullOldValues} = this;
 
         const newFileParserPromise = new Promise((resolve) => {
             let headerNew = [],
@@ -99,7 +107,8 @@ function CsvHandler(separator, identifier) {
                         header: '',
                         insert: [],
                         update: [],
-                    }
+                    },
+                    debugging: {}
                 },
                 count = 0,
                 skuIndex = 0;
@@ -116,6 +125,20 @@ function CsvHandler(separator, identifier) {
                         newValue.insert.push(line);
                     } else if (oldValues[sku] !== hashedLine) {
                         newValue.update.push(line);
+
+                        if (this.debug) {
+                            newValue.debugging[sku] = [];
+
+                            headerNew.forEach((headerItem, index) => {
+                                if (lineSplit[index] !== fullOldValues[sku][index]) {
+                                    newValue.debugging[sku].push({
+                                        field: headerItem,
+                                        old: fullOldValues[sku][index],
+                                        new: lineSplit[index]
+                                    })
+                                }
+                            })
+                        }
                     }
                 } else if (newValue.headerNew) {
                     let deltaLine = newHeaderFields.map(field => lineSplit[headerNew.indexOf(field)]).join(this.separator);

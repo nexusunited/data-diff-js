@@ -13,7 +13,7 @@ function getComparator(type, options) {
 
     switch (type) {
         case 'csv':
-            comparatorClass = new CsvHandler(options.separator, options.identifier);
+            comparatorClass = new CsvHandler(options.separator, options.identifier, options.debugging);
             break;
         case 'json':
             comparatorClass = new JsonHandler(options.identifier);
