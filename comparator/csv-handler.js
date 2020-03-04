@@ -108,10 +108,15 @@ function CsvHandler(separator, identifier, debug = false) {
                         insert: [],
                         update: [],
                     },
-                    debugging: {}
+                    debugging: {
+                        insert: {},
+                        update: {},
+                        delete: {}
+                    }
                 },
                 count = 0,
-                skuIndex = 0;
+                skuIndex = 0,
+                deleted = {...fullOldValues};
 
             newFileHandle.on('line', (line) => {
                 let lineSplit = line.split(this.separator);
@@ -123,23 +128,19 @@ function CsvHandler(separator, identifier, debug = false) {
                 if (!newValue.headerNew && count > 0) {
                     if (typeof oldValues[sku] !== 'string') {
                         newValue.insert.push(line);
+
+                        if (this.debug) {
+                            newValue.debugging.insert[sku] = generateDebuggingSet(headerNew, [], lineSplit);
+                        }
                     } else if (oldValues[sku] !== hashedLine) {
                         newValue.update.push(line);
 
                         if (this.debug) {
-                            newValue.debugging[sku] = [];
-
-                            headerNew.forEach((headerItem, index) => {
-                                if (lineSplit[index] !== fullOldValues[sku][index]) {
-                                    newValue.debugging[sku].push({
-                                        field: headerItem,
-                                        old: fullOldValues[sku][index],
-                                        new: lineSplit[index]
-                                    })
-                                }
-                            })
+                            newValue.debugging.update[sku] = generateDebuggingSet(headerNew, fullOldValues[sku], lineSplit);
                         }
                     }
+
+                    delete deleted[sku];
                 } else if (newValue.headerNew) {
                     let deltaLine = newHeaderFields.map(field => lineSplit[headerNew.indexOf(field)]).join(this.separator);
                     let cleanedLine = headerNew.map(
@@ -179,13 +180,39 @@ function CsvHandler(separator, identifier, debug = false) {
                 }
 
                 count++
-            }).on('close', () => resolve(newValue))
+            }).on('close', () => {
+                if (this.debug) {
+                    Object.keys(deleted).forEach(sku => {
+                        if (sku !== HEADERHASH) {
+                            newValue.debugging.delete[sku] = generateDebuggingSet(headerNew, deleted[sku], []);
+                        }
+                    })
+                }
+
+                return resolve(newValue)
+            })
         });
 
         return newFileParserPromise.then(values => {
             this.newValue = values;
             newFileHandle.close();
         });
+    };
+
+    const generateDebuggingSet = function (header, oldLine, newLine) {
+        let split = [];
+
+        header.forEach((headerItem, index) => {
+            if (newLine[index] !== oldLine[index]) {
+                split.push({
+                    field: headerItem,
+                    old: oldLine[index] || '',
+                    new: newLine[index] || ''
+                })
+            }
+        });
+
+        return split;
     };
 
     const getHash = function (input) {
