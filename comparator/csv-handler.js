@@ -212,7 +212,10 @@ function CsvHandler(separator, identifier, debug = false) {
             }
         });
 
-        return split;
+        return {
+            line: (newLine.length > 0 ? newLine : oldLine).join(this.separator),
+            fields: split
+        };
     };
 
     const getHash = function (input) {
