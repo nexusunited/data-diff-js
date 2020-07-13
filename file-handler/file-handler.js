@@ -1,9 +1,9 @@
 const fs = require('fs');
 const readline = require('readline');
 
-function createFileHandler(file) {
+function createFileHandler(file, encoding = 'utf8') {
     return readline.createInterface({
-        input: fs.createReadStream(file),
+        input: fs.createReadStream(file, { encoding }),
         console: false
     });
 }
