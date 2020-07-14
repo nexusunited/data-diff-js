@@ -1,12 +1,14 @@
 const fileHandler = require('./file-handler');
 const {getComparator} = require('./comparator');
 
-function DiffParser(type, identifier, separator = null, debugging = false) {
+function DiffParser(type, identifier, separator = null, encoding = 'utf8', debugging = false) {
+    this.encoding = encoding;
+
     this.comparator = getComparator(type, {identifier, separator, debugging});
 
     this.createDiffFile = async function (inputOld, inputNew, {full, path}) {
-        (inputOld !== '' || typeof inputOld !== 'string') && await this.comparator.consume(getHandle(inputOld));
-        await this.comparator.compare(getHandle(inputNew));
+        (inputOld !== '' || typeof inputOld !== 'string') && await this.comparator.consume(getHandle(inputOld, this.encoding));
+        await this.comparator.compare(getHandle(inputNew, this.encoding));
 
         if (path !== null) {
             return writeFile(path, this.comparator.getOutput(full, true));
@@ -15,8 +17,8 @@ function DiffParser(type, identifier, separator = null, debugging = false) {
         }
     };
 
-    const getHandle = function (fileHandleOrPath) {
-        return ('string' === typeof fileHandleOrPath) ? fileHandler.createFileHandler(fileHandleOrPath) : fileHandleOrPath;
+    const getHandle = function (fileHandleOrPath, encoding) {
+        return ('string' === typeof fileHandleOrPath) ? fileHandler.createFileHandler(fileHandleOrPath, encoding) : fileHandleOrPath;
     };
 
     const writeFile = function (pathObj, deltaObj) {
