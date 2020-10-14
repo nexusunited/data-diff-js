@@ -1,6 +1,6 @@
 const hasher = require('../hasher');
 
-const HEADERHASH = 'HEADERHASH'
+const HEADERHASH = 'HEADERHASH';
 
 function JsonHandler(identifier) {
     this.identifier = identifier;
@@ -60,13 +60,11 @@ function JsonHandler(identifier) {
                     const parsedJson = parseJsonArray(json);
 
                     parsedJson.forEach((entry, index) => {
-                        let field = '';
+                        let field = entry[this.identifier];
 
                         if (index === 0) {
                             this.headerOld = Object.getOwnPropertyNames(entry);
-                            field = HEADERHASH;
-                        } else {
-                            field = entry[this.identifier];
+                            oldVal[HEADERHASH] = hashHeader(this.headerOld);
                         }
 
                         oldVal[field] = hashObject(this.headerOld, entry);
@@ -109,13 +107,13 @@ function JsonHandler(identifier) {
                     const parsedJson = parseJsonArray(json);
 
                     parsedJson.forEach((entry, index) => {
-                        if (index === 0) {
-                            headerNew = Object.getOwnPropertyNames(entry);
-                        }
+                        let sku = entry[this.identifier];
                         const hashedObj = hashObject(headerNew, entry);
 
                         if (index === 0) {
-                            if (hashedObj === oldValues[HEADERHASH]) {
+                            headerNew = Object.getOwnPropertyNames(entry);
+
+                            if (hashHeader(headerNew) === oldValues[HEADERHASH]) {
                                 newValue.header = headerNew;
                             } else if (typeof oldValues[HEADERHASH] === 'string') {
                                 newHeaderFields = headerNew.filter(e => !this.headerOld.includes(e));
@@ -128,15 +126,8 @@ function JsonHandler(identifier) {
                                 newValue.header = headerNew;
                             }
                         }
-                        let sku = entry[this.identifier];
 
-                        if (!newValue.headerNew) {
-                            if (typeof oldValues[sku] !== 'string') {
-                                newValue.insert.push(entry);
-                            } else if (oldValues[sku] !== hashedObj) {
-                                newValue.update.push(entry);
-                            }
-                        } else if (newValue.headerNew) {
+                        if (newValue.headerNew) {
                             let deltaEntry = {};
                             let cleanedEntry = {};
 
@@ -157,6 +148,12 @@ function JsonHandler(identifier) {
                                 newValue.preHeaderUpdate.update.push(cleanedEntry);
                             }
                             newValue.update.push(deltaEntry);
+                        } else {
+                            if (typeof oldValues[sku] !== 'string') {
+                                newValue.insert.push(entry);
+                            } else if (oldValues[sku] !== hashedObj) {
+                                newValue.update.push(entry);
+                            }
                         }
                     });
 
@@ -174,8 +171,20 @@ function JsonHandler(identifier) {
         return (JSON.parse(`{"data":${arrayString}}`)).data;
     };
 
-    const hashObject = function (properties, entry) {
+    const hashObject = (properties, entry) => {
         return hasher.hashObject(properties, entry);
+    };
+
+    const hashHeader = (header) => {
+        return hashObject(header, objectFlip({...header}));
+    };
+
+    const objectFlip = (obj) => {
+        return Object.entries(obj).reduce((ret, entry) => {
+            const [key, value] = entry;
+            ret[value] = key;
+            return ret;
+        }, {});
     };
 }
 
