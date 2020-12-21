@@ -133,12 +133,12 @@ function JsonHandler(identifier) {
 
                             newHeaderFields.forEach(field => deltaEntry[field] = entry[field]);
                             headerNew.forEach(
-                                (field, index) => {
+                                field => {
                                     const isIdentifier = field === this.identifier;
                                     const isNewHeaderField = newHeaderFields.includes(field);
 
                                     if (isIdentifier || !isNewHeaderField) {
-                                        cleanedEntry[field] = entry[index];
+                                        cleanedEntry[field] = entry[field];
                                     }
                                 });
 
